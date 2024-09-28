@@ -23,14 +23,16 @@ const authenticateJWT = (req, res, next) => {
 const authorizeAdmin = async (req, res, next) => {
   try {
     const user = await UserModel.findOne({
-      $or: [{ _id: req.user._id }, { username: req.body.username }],
+      $or: [{ _id: req?.user?._id }, { username: req?.body?.username }],
     });
+    console.log("@@adminnnn", user);
     // Find user by ID
     if (user.role !== "admin") {
       return res.status(401).json({ message: "Access denied. Admins only." });
     }
     next();
   } catch (err) {
+    console.log("@@err", err);
     res.status(500).json({ message: "Internal server error" });
   }
 };

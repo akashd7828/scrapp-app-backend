@@ -12,12 +12,12 @@ exports.createOrder = async (req, res) => {
 exports.getAllOrders = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req?.query;
-
+    const where = {
+      $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }],
+    };
     const orders = await Order.aggregate([
       {
-        $match: {
-          $or: [{ deletedAt: { $exists: false } }, { deletedAt: null }],
-        },
+        $match: where,
       },
       {
         $sort: { createdAt: -1 },
@@ -32,10 +32,46 @@ exports.getAllOrders = async (req, res) => {
           as: "users",
         },
       },
-      { $unwind: "users" },
+      { $unwind: "$users" },
+      {
+        $lookup: {
+          from: "scraptypes",
+          localField: "scrapTypes",
+          foreignField: "_id",
+          as: "scraptypesArray",
+        },
+      },
+      {
+        // Projection stage: include/exclude specific fields
+        $project: {
+          // Include specific fields from the 'Order' collection
+          _id: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          status: 1,
+          address: 1,
+          pickupDate: 1,
+
+          // Include specific fields from the 'users' lookup
+          "users.username": 1,
+          "users.email": 1,
+          "users.mobileNumber": 1,
+
+          // Include the 'scrapTypes' (as a full object from the lookup)
+          scrapTypes: "$scraptypesArray",
+          scrapWeight: 1,
+          // Include specific fields if needed from 'scrapTypes'
+          // "scraptypesArray.type": 1,
+
+          // Or you can project everything from 'scraptypesArray' by default
+        },
+      },
     ]);
-    return res.json(orders);
+
+    const totalPages = await Order.countDocuments(where);
+    return res.status(200).send({ items: orders, totalPages });
   } catch (err) {
+    console.log("@@err", err);
     return res.status(500).json({ message: "Failed to get orders" });
   }
 };

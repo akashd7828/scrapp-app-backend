@@ -103,8 +103,10 @@ exports.getAllUsers = async (req, res) => {
       { $skip: (page - 1) * Number(limit) },
       { $limit: Number(limit) },
     ]);
-    res.json(users);
+    const totalPages = await User.countDocuments();
+    res.status(200).send({ users, totalPages });
   } catch (error) {
+    console.log("@@error", error);
     res.status(500).json({ message: "Failed to get users" });
   }
 };
