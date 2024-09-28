@@ -35,7 +35,7 @@ exports.dashboardStats = async (req, res) => {
     ]);
 
     // Count pending requests
-    const pendingRequests = await Order.countDocuments({ status: "pending" });
+    const pendingRequests = await Order.countDocuments({ status: "PENDING" });
 
     // Return the stats
     res.json({

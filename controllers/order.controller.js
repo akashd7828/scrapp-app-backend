@@ -136,6 +136,42 @@ exports.getUserOrders = async (req, res) => {
   }
 };
 
+exports.approveOrder = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Assuming you have a MongoDB model for Scrap Orders
+    const order = await Order.findByIdAndUpdate(
+      id,
+      { status: "APPROVED" },
+      { new: true }
+    );
+    if (!order) {
+      return res.status(404).json({ message: "Scrap order not found" });
+    }
+    res.json({ message: "Scrap order approved", order });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error approving scrap order" });
+  }
+};
+
+exports.declineOrder = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const order = await Order.findByIdAndUpdate(
+      id,
+      { status: "DECLINED" },
+      { new: true }
+    );
+    if (!order) {
+      return res.status(404).json({ message: "Scrap order not found" });
+    }
+    res.json({ message: "Scrap order declined", order });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error declining scrap order" });
+  }
+};
 // Soft Delete Order
 exports.deleteOrder = async (req, res) => {
   try {

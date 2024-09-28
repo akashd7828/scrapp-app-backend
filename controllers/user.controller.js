@@ -96,14 +96,20 @@ exports.refreshAccessToken = (req, res) => {
 exports.getAllUsers = async (req, res) => {
   try {
     const { page, limit } = req.query;
+    const where = {
+      role: "customer",
+    };
     const users = await User.aggregate([
+      {
+        $match: where,
+      },
       {
         $sort: { createdAt: -1 },
       },
       { $skip: (page - 1) * Number(limit) },
       { $limit: Number(limit) },
     ]);
-    const totalPages = await User.countDocuments();
+    const totalPages = await User.countDocuments(where);
     res.status(200).send({ users, totalPages });
   } catch (error) {
     console.log("@@error", error);

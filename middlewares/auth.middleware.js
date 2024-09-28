@@ -25,9 +25,8 @@ const authorizeAdmin = async (req, res, next) => {
     const user = await UserModel.findOne({
       $or: [{ _id: req?.user?._id }, { username: req?.body?.username }],
     });
-    console.log("@@adminnnn", user);
     // Find user by ID
-    if (user.role !== "admin") {
+    if (user?.role !== "admin") {
       return res.status(401).json({ message: "Access denied. Admins only." });
     }
     next();
