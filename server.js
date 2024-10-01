@@ -25,11 +25,11 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
-app.use("/api/users", userRoutes);
-app.use("/api/scrap-types", scrapTypeRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/otp", otpRoutes);
-app.use("/api/dashboard", dashboardRoutes);
+app.use("/v1/api/users", userRoutes);
+app.use("/v1/api/scrap-types", scrapTypeRoutes);
+app.use("/v1/api/orders", orderRoutes);
+app.use("/v1/api/otp", otpRoutes);
+app.use("/v1/api/dashboard", dashboardRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
