@@ -6,6 +6,11 @@ const scrapTypeRoutes = require("./routes/scrapType.routes");
 const orderRoutes = require("./routes/order.routes");
 const otpRoutes = require("./routes/otp.routes");
 const dashboardRoutes = require("./routes/dashboard.routes");
+const blogRoutes = require("./routes/blog.routes");
+const awardRoutes = require("./routes/awards.routes");
+const leadingBrandsRoutes = require("./routes/leadingBrands.routes");
+const testimonialRoutes = require("./routes/testimonials.routes");
+
 require("dotenv").config({ path: `.env.${process.env.NODE_ENV}` });
 
 const cors = require("cors");
@@ -30,6 +35,9 @@ app.use("/v1/api/scrap-types", scrapTypeRoutes);
 app.use("/v1/api/orders", orderRoutes);
 app.use("/v1/api/otp", otpRoutes);
 app.use("/v1/api/dashboard", dashboardRoutes);
-
+app.use("/v1/api/blog", blogRoutes);
+app.use("/v1/api/leadingBrands", leadingBrandsRoutes);
+app.use("/v1/api/awards", awardRoutes);
+app.use("/v1/api/testimonial", testimonialRoutes);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
