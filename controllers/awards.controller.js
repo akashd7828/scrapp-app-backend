@@ -76,3 +76,71 @@ exports.getAwards = async (req, res) => {
   console.log("@@data", data);
   res.json(data);
 };
+
+exports.deleteAward = async (req, res) => {
+  try {
+    const blog = await awardsModel.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({ message: "testimonial not found" });
+    }
+
+    // Delete the image from Cloudinary
+    const publicId = blog.imageUrl.split("/").slice(-1)[0].split(".")[0]; // Extract public ID from the URL
+    await cloudinary.uploader.destroy(`uploads/${publicId}`);
+
+    // Delete the blog from MongoDB
+    await awardsModel.findByIdAndDelete(req.params.id);
+    res
+      .status(200)
+      .json({ message: "testimonial and image deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting testimonial", error });
+  }
+};
+
+// Function to update a blog and replace its image if necessary
+exports.updateAward = async (req, res) => {
+  const { description, title } = req.body;
+
+  try {
+    const blog = await awardsModel.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    // If there's a new image, delete the old one and upload the new image to Cloudinary
+    if (req.file) {
+      const oldPublicId = blog.imageUrl.split("/").slice(-1)[0].split(".")[0];
+      await cloudinary.uploader.destroy(`uploads/${oldPublicId}`);
+
+      const newImage = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              folder: "uploads",
+              transformation: [{ width: 1000, crop: "limit" }],
+            },
+            (error, cloudinaryResponse) => {
+              if (error) return reject(error);
+              resolve(cloudinaryResponse.secure_url);
+            }
+          )
+          .end(req.file.buffer);
+      });
+
+      blog.imageUrl = newImage; // Update image URL in the blog entry
+    }
+
+    // Update the other fields
+    blog.description = description || blog.description;
+    blog.title = title || blog.title;
+
+    await blog.save(); // Save the updated blog
+
+    res.status(200).json({ message: "award data updated successfully", blog });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating award data", error });
+  }
+};

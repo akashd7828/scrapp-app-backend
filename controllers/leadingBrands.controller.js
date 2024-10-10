@@ -75,3 +75,25 @@ exports.getLeadingBrands = async (req, res) => {
   console.log("@@data", data);
   res.json(data);
 };
+
+exports.deleteLeadingBrand = async (req, res) => {
+  try {
+    const blog = await leadingBrandsModel.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    // Delete the image from Cloudinary
+    const publicId = blog.imageUrl.split("/").slice(-1)[0].split(".")[0]; // Extract public ID from the URL
+    await cloudinary.uploader.destroy(`uploads/${publicId}`);
+
+    // Delete the blog from MongoDB
+    await leadingBrandsModel.findByIdAndDelete(req.params.id);
+    res
+      .status(200)
+      .json({ message: "Leading brand image deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting blog", error });
+  }
+};

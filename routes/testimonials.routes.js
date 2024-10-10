@@ -5,6 +5,8 @@ const multer = require("multer");
 const {
   testimonialUpload,
   getTestimonials,
+  deleteTestimonial,
+  updateTestimonial,
 } = require("../controllers/testimonials.controller");
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -18,4 +20,6 @@ cloudinary.config({
 // Route to get dashboard stats
 router.post("/upload", upload.single("image"), testimonialUpload);
 router.get("", getTestimonials);
+router.delete("/:id", deleteTestimonial); // Route for deleting a blog
+router.put("/:id", upload.single("image"), updateTestimonial); // Route for updating a blog
 module.exports = router;

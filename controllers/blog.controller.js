@@ -1,47 +1,30 @@
-const express = require("express");
-const blogModel = require("../models/blog.model");
 const cloudinary = require("cloudinary").v2;
-const multer = require("multer"); // Add multer to handle file uploads
+const blogModel = require("../models/blog.model");
+const multer = require("multer");
 require("dotenv").config();
 
 // Cloudinary config
-
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Setup multer for file handling
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 1 * 1024 * 1024 }, // Limit file size to 5MB
-});
-
+// Function to upload a new blog
 exports.blogUpload = async (req, res) => {
-  cloudinary.api.delete_all_resources((error, result) => {
-    if (error) {
-      console.log("Error:", error);
-    } else {
-      console.log("Success:", result);
-    }
-  });
   const { description, blogUrl, title } = req.body;
 
-  // Handle missing file
   if (!req.file) {
     return res.status(400).send({ message: "No image provided" });
   }
 
   try {
-    // Upload the file buffer to Cloudinary with resizing (max width: 1000px)
+    // Upload the image to Cloudinary
     cloudinary.uploader
       .upload_stream(
         {
-          folder: "uploads", // Specify folder in Cloudinary
-          transformation: [
-            { width: 1000, crop: "limit" }, // Limit image width to 1000px
-          ],
+          folder: "uploads", // Folder in Cloudinary
+          transformation: [{ width: 1000, crop: "limit" }],
         },
         async (error, cloudinaryResponse) => {
           if (error) {
@@ -50,20 +33,19 @@ exports.blogUpload = async (req, res) => {
               .json({ message: "Cloudinary upload failed", error });
           }
 
-          // Save the Cloudinary URL and description to the database
-          const newImage = new blogModel({
-            imageUrl: cloudinaryResponse.secure_url, // Using Cloudinary secure URL
-            description: description,
+          // Save blog entry to MongoDB
+          const newBlog = new blogModel({
+            imageUrl: cloudinaryResponse.secure_url,
+            description,
             title,
             blogUrl,
           });
 
           try {
-            await newImage.save(); // Save the new blog entry to MongoDB
+            await newBlog.save();
             res.status(200).json({
               message: "Upload successful",
-              imageUrl: cloudinaryResponse.secure_url,
-              description,
+              blog: newBlog,
             });
           } catch (dbError) {
             res
@@ -72,15 +54,86 @@ exports.blogUpload = async (req, res) => {
           }
         }
       )
-      .end(req.file.buffer); // Pass the file buffer to Cloudinary
+      .end(req.file.buffer);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: err });
   }
 };
 
+// Function to get all blogs
 exports.getBlogs = async (req, res) => {
-  const data = await blogModel.find();
-  console.log("@@data", data);
-  res.json(data);
+  try {
+    const blogs = await blogModel.find();
+    res.status(200).json(blogs);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching blogs", error });
+  }
+};
+
+// Function to delete a blog and its image from Cloudinary
+exports.deleteBlog = async (req, res) => {
+  try {
+    const blog = await blogModel.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    // Delete the image from Cloudinary
+    const publicId = blog.imageUrl.split("/").slice(-1)[0].split(".")[0]; // Extract public ID from the URL
+    await cloudinary.uploader.destroy(`uploads/${publicId}`);
+
+    // Delete the blog from MongoDB
+    await blogModel.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: "Blog and image deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting blog", error });
+  }
+};
+
+// Function to update a blog and replace its image if necessary
+exports.updateBlog = async (req, res) => {
+  const { description, blogUrl, title } = req.body;
+
+  try {
+    const blog = await blogModel.findById(req.params.id);
+
+    if (!blog) {
+      return res.status(404).json({ message: "Blog not found" });
+    }
+
+    // If there's a new image, delete the old one and upload the new image to Cloudinary
+    if (req.file) {
+      const oldPublicId = blog.imageUrl.split("/").slice(-1)[0].split(".")[0];
+      await cloudinary.uploader.destroy(`uploads/${oldPublicId}`);
+
+      const newImage = await new Promise((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(
+            {
+              folder: "uploads",
+              transformation: [{ width: 1000, crop: "limit" }],
+            },
+            (error, cloudinaryResponse) => {
+              if (error) return reject(error);
+              resolve(cloudinaryResponse.secure_url);
+            }
+          )
+          .end(req.file.buffer);
+      });
+
+      blog.imageUrl = newImage; // Update image URL in the blog entry
+    }
+
+    // Update the other fields
+    blog.description = description || blog.description;
+    blog.title = title || blog.title;
+    blog.blogUrl = blogUrl || blog.blogUrl;
+
+    await blog.save(); // Save the updated blog
+
+    res.status(200).json({ message: "Blog updated successfully", blog });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating blog", error });
+  }
 };

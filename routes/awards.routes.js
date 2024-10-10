@@ -1,7 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const { awardsUpload, getAwards } = require("../controllers/awards.controller");
+const {
+  awardsUpload,
+  getAwards,
+  updateAward,
+  deleteAward,
+} = require("../controllers/awards.controller");
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const cloudinary = require("cloudinary").v2;
@@ -14,4 +19,6 @@ cloudinary.config({
 // Route to get dashboard stats
 router.post("/upload", upload.single("image"), awardsUpload);
 router.get("", getAwards);
+router.delete("/:id", deleteAward); // Route for deleting a blog
+router.put("/:id", upload.single("image"), updateAward); // Route for updating a blog
 module.exports = router;

@@ -4,6 +4,7 @@ const multer = require("multer");
 const {
   leadingBrandsUpload,
   getLeadingBrands,
+  deleteLeadingBrand,
 } = require("../controllers/leadingBrands.controller");
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -17,4 +18,6 @@ cloudinary.config({
 // Route to get dashboard stats
 router.post("/upload", upload.single("image"), leadingBrandsUpload);
 router.get("", getLeadingBrands);
+router.delete("/:id", deleteLeadingBrand); // Route for deleting a blog
+
 module.exports = router;
