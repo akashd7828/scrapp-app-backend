@@ -16,6 +16,10 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: "Mobile number already exists." });
     }
 
+    const existingUserByEmail = await User.findOne({ email });
+    if (existingUserByEmail) {
+      return res.status(400).json({ message: "Email already exists." });
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
       name,

@@ -73,7 +73,6 @@ exports.awardsUpload = async (req, res) => {
 
 exports.getAwards = async (req, res) => {
   const data = await awardsModel.find();
-  console.log("@@data", data);
   res.json(data);
 };
 

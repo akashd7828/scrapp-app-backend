@@ -72,7 +72,6 @@ exports.leadingBrandsUpload = async (req, res) => {
 
 exports.getLeadingBrands = async (req, res) => {
   const data = await leadingBrandsModel.find();
-  console.log("@@data", data);
   res.json(data);
 };
 
